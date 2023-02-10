@@ -18,12 +18,19 @@ RasterizerImp::RasterizerImp(PixelSampleMethod psm, LevelSampleMethod lsm,
 
 // Used by rasterize_point and rasterize_line
 void RasterizerImp::fill_pixel(size_t x, size_t y, Color c) {
-    // TODO: Task 2: You might need to this function to fix points and lines (such as the black rectangle border in test4.svg)
-    // NOTE: You are not required to implement proper supersampling for points and lines
-    // It is sufficient to use the same color for all supersamples of a pixel for points and lines (not triangles)
+    int step_size = sqrt(sample_rate);
 
+    for (int x_loc = 0; x_loc < step_size; ++x_loc) {
+        for (int y_loc = 0; y_loc < step_size; ++y_loc) {
+            fill_sample_pixel(x * step_size + x_loc, y * step_size + y_loc, c);
+        }
+    }
+}
 
-    sample_buffer[y * width + x] = c;
+void RasterizerImp::fill_sample_pixel(size_t x, size_t y, Color c) {
+
+    int step_size = sqrt(sample_rate);
+    sample_buffer[y * width * step_size + x] = c;
 }
 
 // Rasterize a point: simple example to help you start familiarizing
@@ -70,12 +77,57 @@ void RasterizerImp::rasterize_triangle(float x0, float y0,
                                        float x1, float y1,
                                        float x2, float y2,
                                        Color color) {
-    // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
 
-    // TODO: Task 2: Update to implement super-sampled rasterization
+    size_t step_size = sqrt(sample_rate);
 
+    size_t effective_width = width * step_size;
+    size_t effective_height = height * step_size;
 
+    Vector2D vertices[] = {
+        Vector2D(x0, y0) * step_size,
+        Vector2D(x1, y1) * step_size,
+        Vector2D(x2, y2) * step_size,
+    };
 
+    Vector2D bounding_min = Vector2D(effective_width, effective_height);
+    Vector2D bounding_max = Vector2D(0, 0);
+
+    // Get the bounding box of the triangle.
+    for (Vector2D vertex : vertices) {
+        bounding_min.x = min(bounding_min.x, vertex.x);
+        bounding_min.y = min(bounding_min.y, vertex.y);
+
+        bounding_max.x = max(bounding_max.x, vertex.x);
+        bounding_max.y = max(bounding_max.y, vertex.y);
+    }
+
+    bounding_min.x = max(0.0, bounding_min.x);
+    bounding_min.y = max(0.0, bounding_min.y);
+
+    bounding_max.x = min(double(effective_width), bounding_max.x);
+    bounding_max.y = min(double(effective_height), bounding_max.y);
+
+    for (int y_test = bounding_min.y; y_test <= bounding_max.y; ++y_test) {
+        bool in_bound = false;
+        for (int x_test = bounding_min.x; x_test <= bounding_max.x; ++x_test) {
+            Vector2D p_test = Vector2D(x_test + 0.5, y_test + 0.5);
+            uint8_t count = 0;
+            for (int k = 0; k < 3; ++k) {
+                Vector2D line = vertices[(k + 1) % 3] - vertices[k];
+                Vector2D p_test_vector = p_test - vertices[k];
+                if (cross(line, p_test_vector) < 0)
+                    count++;
+            }
+
+            if (!count || count == 3) {
+                in_bound = true;
+                fill_sample_pixel(x_test, y_test, color);
+            } else {
+                if (in_bound)
+                    break;
+            }
+        }
+    }
 }
 
 
@@ -111,7 +163,7 @@ void RasterizerImp::set_sample_rate(unsigned int rate) {
     this->sample_rate = rate;
 
 
-    this->sample_buffer.resize(width * height, Color::White);
+    this->sample_buffer.resize(width * height * rate, Color::White);
 }
 
 
@@ -142,11 +194,32 @@ void RasterizerImp::clear_buffers() {
 //
 void RasterizerImp::resolve_to_framebuffer() {
     // TODO: Task 2: You will likely want to update this function for supersampling support
-
+    int step_size = sqrt(sample_rate);
 
     for (int x = 0; x < width; ++x) {
         for (int y = 0; y < height; ++y) {
-            Color col = sample_buffer[y * width + x];
+            int x_bound = x * step_size;
+            int y_bound = y * step_size;
+
+            float r = 0; float g = 0; float b = 0;
+            for (int x_actual = x_bound;
+                 x_actual < x_bound + step_size;
+                 ++x_actual) {
+
+                for (int y_actual = y_bound;
+                     y_actual < y_bound + step_size;
+                     ++y_actual) {
+
+                    Color sample_color = sample_buffer[
+                        y_actual * width * step_size + x_actual
+                    ];
+                    r += sample_color.r;
+                    g += sample_color.g;
+                    b += sample_color.b;
+                }
+            }
+            Color col = Color(r / sample_rate, g / sample_rate, b / sample_rate);
+
 
             for (int k = 0; k < 3; ++k) {
                 this->rgb_framebuffer_target[3 * (y * width + x) + k] = (&col.r)[k] * 255;

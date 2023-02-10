@@ -176,8 +176,13 @@ struct SVG {
   std::map<std::string, Texture*> textures;
 
   void draw(Rasterizer*dr, Matrix3x3 global_transform) {
+
+    clock_t time = clock();
     for (int i = 0; i < elements.size(); ++i)
-      elements[i]->draw(dr, global_transform);
+        elements[i]->draw(dr, global_transform);
+
+    time = clock() - time;
+    cout << "Done in " << (float)time/CLOCKS_PER_SEC << "seconds" << endl;
   }
 
 };
