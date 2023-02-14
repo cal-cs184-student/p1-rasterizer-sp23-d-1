@@ -1,4 +1,5 @@
 #include "rasterizer.h"
+#include <array>
 
 using namespace std;
 
@@ -72,58 +73,66 @@ void RasterizerImp::rasterize_line(float x0, float y0,
     }
 }
 
+array<Vector2D, 2> triangle_bounding_box(size_t width, size_t height, Vector2D* vertices) {
+
+    Vector2D bounding_min = Vector2D(width, height);
+    Vector2D bounding_max = Vector2D(0, 0);
+
+    // Get the bounding box of the triangle.
+    for (int i = 0; i < 3; ++i) {
+        bounding_min.x = min(bounding_min.x, vertices[i].x);
+        bounding_min.y = min(bounding_min.y, vertices[i].y);
+
+        bounding_max.x = max(bounding_max.x, vertices[i].x);
+        bounding_max.y = max(bounding_max.y, vertices[i].y);
+    }
+
+    bounding_min.x = max(0.0, bounding_min.x);
+    bounding_min.y = max(0.0, bounding_min.y);
+
+    bounding_max.x = min(double(width), bounding_max.x);
+    bounding_max.y = min(double(height), bounding_max.y);
+
+    return array<Vector2D, 2>{bounding_min, bounding_max};
+}
+
+bool triangle_test_point_inbound(Vector2D p, Vector2D* vertices) {
+    uint8_t count = 0;
+    for (int k = 0; k < 3; ++k) {
+        Vector2D line = vertices[(k + 1) % 3] - vertices[k];
+        Vector2D p_test_vector = p - vertices[k];
+        if (cross(line, p_test_vector) < 0)
+            count++;
+    }
+
+    return !count || count == 3;
+}
+
 // Rasterize a triangle.
 void RasterizerImp::rasterize_triangle(float x0, float y0,
                                        float x1, float y1,
                                        float x2, float y2,
                                        Color color) {
-
     size_t step_size = sqrt(sample_rate);
-
-    size_t effective_width = width * step_size;
-    size_t effective_height = height * step_size;
-
     Vector2D vertices[] = {
         Vector2D(x0, y0) * step_size,
         Vector2D(x1, y1) * step_size,
         Vector2D(x2, y2) * step_size,
     };
 
-    Vector2D bounding_min = Vector2D(effective_width, effective_height);
-    Vector2D bounding_max = Vector2D(0, 0);
-
-    // Get the bounding box of the triangle.
-    for (Vector2D vertex : vertices) {
-        bounding_min.x = min(bounding_min.x, vertex.x);
-        bounding_min.y = min(bounding_min.y, vertex.y);
-
-        bounding_max.x = max(bounding_max.x, vertex.x);
-        bounding_max.y = max(bounding_max.y, vertex.y);
-    }
-
-    bounding_min.x = max(0.0, bounding_min.x);
-    bounding_min.y = max(0.0, bounding_min.y);
-
-    bounding_max.x = min(double(effective_width), bounding_max.x);
-    bounding_max.y = min(double(effective_height), bounding_max.y);
+    array<Vector2D, 2> bounding_box = triangle_bounding_box(width * step_size, height * step_size, vertices);
+    Vector2D bounding_min = bounding_box[0];
+    Vector2D bounding_max = bounding_box[1];
 
     for (int y_test = bounding_min.y; y_test <= bounding_max.y; ++y_test) {
-        bool in_bound = false;
+        bool seen_inbound = false;
         for (int x_test = bounding_min.x; x_test <= bounding_max.x; ++x_test) {
-            Vector2D p_test = Vector2D(x_test + 0.5, y_test + 0.5);
-            uint8_t count = 0;
-            for (int k = 0; k < 3; ++k) {
-                Vector2D line = vertices[(k + 1) % 3] - vertices[k];
-                Vector2D p_test_vector = p_test - vertices[k];
-                if (cross(line, p_test_vector) < 0)
-                    count++;
-            }
-
-            if (!count || count == 3) {
-                in_bound = true;
+            Vector2D p = Vector2D(x_test + 0.5, y_test + 0.5);
+            if (triangle_test_point_inbound(p, vertices)) {
+                seen_inbound = true;
                 fill_sample_pixel(x_test, y_test, color);
             } else {
-                if (in_bound)
+                if (seen_inbound)
                     break;
             }
         }
@@ -131,72 +140,43 @@ void RasterizerImp::rasterize_triangle(float x0, float y0,
 }
 
 
+Vector3D get_barycentric_coordinates(Vector2D v, Vector2D* vertices) {
+    Matrix3x3 m = Matrix3x3(vertices[0].x, vertices[1].x, vertices[2].x,
+                            vertices[0].y, vertices[1].y, vertices[2].y,
+                            1,             1,             1  );
+    return m.inv() * Vector3D(v.x, v.y, 1);
+}
+
+
 void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Color c0,
                                                           float x1, float y1, Color c1,
-                                                          float x2, float y2, Color c2)
-{
+                                                          float x2, float y2, Color c2) {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
     
     // Rasterize triangle
     size_t step_size = sqrt(sample_rate);
-
-    size_t effective_width = width * step_size;
-    size_t effective_height = height * step_size;
-
     Vector2D vertices[] = {
         Vector2D(x0, y0) * step_size,
         Vector2D(x1, y1) * step_size,
         Vector2D(x2, y2) * step_size,
     };
 
-    Vector2D bounding_min = Vector2D(effective_width, effective_height);
-    Vector2D bounding_max = Vector2D(0, 0);
-
-    // Get the bounding box of the triangle.
-    for (Vector2D vertex : vertices) {
-        bounding_min.x = min(bounding_min.x, vertex.x);
-        bounding_min.y = min(bounding_min.y, vertex.y);
-
-        bounding_max.x = max(bounding_max.x, vertex.x);
-        bounding_max.y = max(bounding_max.y, vertex.y);
-    }
-
-    bounding_min.x = max(0.0, bounding_min.x);
-    bounding_min.y = max(0.0, bounding_min.y);
-
-    bounding_max.x = min(double(effective_width), bounding_max.x);
-    bounding_max.y = min(double(effective_height), bounding_max.y);
-
-    
+    array<Vector2D, 2> bounding_box = triangle_bounding_box(width * step_size, height * step_size, vertices);
+    Vector2D bounding_min = bounding_box[0];
+    Vector2D bounding_max = bounding_box[1];
 
     for (int y_test = bounding_min.y; y_test <= bounding_max.y; ++y_test) {
-        bool in_bound = false;
+        bool seen_inbound = false;
         for (int x_test = bounding_min.x; x_test <= bounding_max.x; ++x_test) {
-            Vector2D p_test = Vector2D(x_test + 0.5, y_test + 0.5);
-            uint8_t count = 0;
-            // L(x.y)
-            for (int k = 0; k < 3; ++k) {
-                Vector2D line = vertices[(k + 1) % 3] - vertices[k];
-                Vector2D p_test_vector = p_test - vertices[k];
-                
-                
-                if (cross(line, p_test_vector) < 0)
-                    count++;
-            }
-
-            if (!count || count == 3) {
-                in_bound = true;
-                
-                Matrix3x3 matrix = Matrix3x3(x0 * step_size, x1 * step_size, x2 * step_size,
-                                             y0 * step_size, y1 * step_size, y2 * step_size,
-                                             1,  1,  1);
-                Vector3D alpha_beta_gamma = matrix.inv() * Vector3D(x_test, y_test, 1);
-                Color c = (c0 * alpha_beta_gamma.x) + (c1 * alpha_beta_gamma.y) + (c2 * alpha_beta_gamma.z);
-        
+            Vector2D p = Vector2D(x_test + 0.5, y_test + 0.5);
+            if (triangle_test_point_inbound(p, vertices)) {
+                seen_inbound = true;
+                Vector3D coord = get_barycentric_coordinates(p, vertices);
+                Color c = (c0 * coord.x) + (c1 * coord.y) + (c2 * coord.z);
                 fill_sample_pixel(x_test, y_test, c);
             } else {
-                if (in_bound)
+                if (seen_inbound)
                     break;
             }
         }
@@ -207,15 +187,43 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
 void RasterizerImp::rasterize_textured_triangle(float x0, float y0, float u0, float v0,
                                                 float x1, float y1, float u1, float v1,
                                                 float x2, float y2, float u2, float v2,
-                                                Texture& tex)
-{
+                                                Texture& tex) {
     // TODO: Task 5: Fill in the SampleParams struct and pass it to the tex.sample function.
+    
     // TODO: Task 6: Set the correct barycentric differentials in the SampleParams struct.
     // Hint: You can reuse code from rasterize_triangle/rasterize_interpolated_color_triangle
+    size_t step_size = sqrt(sample_rate);
+    Vector2D vertices[] = {
+        Vector2D(x0, y0) * step_size,
+        Vector2D(x1, y1) * step_size,
+        Vector2D(x2, y2) * step_size,
+    };
 
+    array<Vector2D, 2> bounding_box = triangle_bounding_box(width * step_size, height * step_size, vertices);
+    Vector2D bounding_min = bounding_box[0];
+    Vector2D bounding_max = bounding_box[1];
 
-
-
+    for (int y_test = bounding_min.y; y_test <= bounding_max.y; ++y_test) {
+        bool seen_inbound = false;
+        for (int x_test = bounding_min.x; x_test <= bounding_max.x; ++x_test) {
+            Vector2D p = Vector2D(x_test + 0.5, y_test + 0.5);
+            if (triangle_test_point_inbound(p, vertices)) {
+                seen_inbound = true;
+                Vector3D coord = get_barycentric_coordinates(p, vertices);
+                Vector2D uv = Vector2D(u0, v0) * coord.x + Vector2D(u1, v1) * coord.y + Vector2D(u2, v2) * coord.z;
+                Color c;
+                if (psm == P_NEAREST) {
+                    c = tex.sample_nearest(uv, 0);
+                } else {
+                    c = tex.sample_bilinear(uv, 0);
+                }
+                fill_sample_pixel(x_test, y_test, c);
+            } else {
+                if (seen_inbound)
+                    break;
+            }
+        }
+    }
 }
 
 void RasterizerImp::set_sample_rate(unsigned int rate) {
