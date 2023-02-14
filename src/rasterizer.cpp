@@ -190,7 +190,7 @@ void RasterizerImp::clear_buffers() {
 // This function is called at the end of rasterizing all elements of the
 // SVG file.  If you use a supersample buffer to rasterize SVG elements
 // for antialising, you could use this call to fill the target framebuffer
-// pixels from the supersample buffer data.
+// pixels from the supersample buffer data.x
 //
 void RasterizerImp::resolve_to_framebuffer() {
     // TODO: Task 2: You will likely want to update this function for supersampling support
