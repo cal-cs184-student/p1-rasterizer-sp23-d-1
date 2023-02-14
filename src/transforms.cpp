@@ -30,9 +30,10 @@ Matrix3x3 scale(float sx, float sy) {
 // The input argument is in degrees counterclockwise
 Matrix3x3 rotate(float deg) {
 	// Part 3: Fill this in.
-
-
-	return Matrix3x3();
+    Matrix3x3 transform_m = Matrix3x3(cos(deg), -sin(deg), 0,
+                                      sin(deg), cos(deg), 0,
+                                      0, 0, 1);
+    return transform_m;
 }
 
 }
