@@ -137,6 +137,71 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
 {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
+    
+    // Rasterize triangle
+    size_t step_size = sqrt(sample_rate);
+
+    size_t effective_width = width * step_size;
+    size_t effective_height = height * step_size;
+
+    Vector2D vertices[] = {
+        Vector2D(x0, y0) * step_size,
+        Vector2D(x1, y1) * step_size,
+        Vector2D(x2, y2) * step_size,
+    };
+
+    Vector2D bounding_min = Vector2D(effective_width, effective_height);
+    Vector2D bounding_max = Vector2D(0, 0);
+
+    // Get the bounding box of the triangle.
+    for (Vector2D vertex : vertices) {
+        bounding_min.x = min(bounding_min.x, vertex.x);
+        bounding_min.y = min(bounding_min.y, vertex.y);
+
+        bounding_max.x = max(bounding_max.x, vertex.x);
+        bounding_max.y = max(bounding_max.y, vertex.y);
+    }
+
+    bounding_min.x = max(0.0, bounding_min.x);
+    bounding_min.y = max(0.0, bounding_min.y);
+
+    bounding_max.x = min(double(effective_width), bounding_max.x);
+    bounding_max.y = min(double(effective_height), bounding_max.y);
+    
+//    Vector2D colors[] = {
+//        c0, c1, c2
+//    };
+
+    
+
+    for (int y_test = bounding_min.y; y_test <= bounding_max.y; ++y_test) {
+        bool in_bound = false;
+        for (int x_test = bounding_min.x; x_test <= bounding_max.x; ++x_test) {
+            Vector2D p_test = Vector2D(x_test + 0.5, y_test + 0.5);
+            uint8_t count = 0;
+            // L(x.y)
+            for (int k = 0; k < 3; ++k) {
+                Vector2D line = vertices[(k + 1) % 3] - vertices[k];
+                Vector2D p_test_vector = p_test - vertices[k];
+                
+                if (cross(line, p_test_vector) < 0)
+                    count++;
+            }
+
+            if (!count || count == 3) {
+                in_bound = true;
+                
+                Matrix3x3 matrix = Matrix3x3(x0, x1, x2,
+                                           y0, y1, y2,
+                                           1, 1, 1);
+                
+                fill_sample_pixel(x_test, y_test, c2);
+            } else {
+                if (in_bound)
+                    break;
+            }
+        }
+    }
 
 
 
