@@ -209,14 +209,19 @@ void RasterizerImp::rasterize_textured_triangle(float x0, float y0, float u0, fl
             Vector2D p = Vector2D(x_test + 0.5, y_test + 0.5);
             if (triangle_test_point_inbound(p, vertices)) {
                 seen_inbound = true;
+                SampleParams params;
                 Vector3D coord = get_barycentric_coordinates(p, vertices);
-                Vector2D uv = Vector2D(u0, v0) * coord.x + Vector2D(u1, v1) * coord.y + Vector2D(u2, v2) * coord.z;
-                Color c;
-                if (psm == P_NEAREST) {
-                    c = tex.sample_nearest(uv, 0);
-                } else {
-                    c = tex.sample_bilinear(uv, 0);
-                }
+                params.p_uv = Vector2D(u0, v0) * coord.x + Vector2D(u1, v1) * coord.y + Vector2D(u2, v2) * coord.z;
+
+                coord = get_barycentric_coordinates(Vector2D(p.x + 1, p.y), vertices);
+                params.p_dx_uv = Vector2D(u0, v0) * coord.x + Vector2D(u1, v1) * coord.y + Vector2D(u2, v2) * coord.z;
+
+                coord = get_barycentric_coordinates(Vector2D(p.x, p.y + 1), vertices);
+                params.p_dy_uv = Vector2D(u0, v0) * coord.x + Vector2D(u1, v1) * coord.y + Vector2D(u2, v2) * coord.z;
+
+                params.psm = psm;
+                params.lsm = lsm;
+                Color c = tex.sample(params);
                 fill_sample_pixel(x_test, y_test, c);
             } else {
                 if (seen_inbound)

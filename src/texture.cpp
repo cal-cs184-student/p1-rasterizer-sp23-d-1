@@ -7,22 +7,46 @@
 namespace CGL {
 
 Color Texture::sample(const SampleParams& sp) {
-    
+    float level = get_level(sp);
 
+    float level_floor = floor(level);
+    float t = level - level_floor;
+    Color(Texture::*sample_func)(Vector2D, int);
 
-    // return magenta for invalid level
-    return Color(1, 0, 1);
+    if (sp.psm == P_NEAREST) {
+        sample_func = &Texture::sample_nearest;
+    } else {
+        sample_func = &Texture::sample_bilinear;
+    }
+
+    if (t == 0 || level_floor >= this->mipmap.size() - 2) {
+        return (this->*sample_func)(sp.p_uv, level_floor);
+    } else {
+        return (this->*sample_func)(sp.p_uv, level_floor + 1) * t + (this->*sample_func)(sp.p_uv, level_floor) * (1 - t);
+    }
 }
 
 float Texture::get_level(const SampleParams& sp) {
-    // TODO: Task 6: Fill this in.
-    
+    Vector2D dx_duv = sp.p_dx_uv - sp.p_uv;
+    Vector2D dy_duv = sp.p_dy_uv - sp.p_uv;
+    dx_duv = Vector2D(dx_duv.x * this->width, dx_duv.y * this->height);
+    dy_duv = Vector2D(dy_duv.x * this->width, dy_duv.y * this->height);
+    double level = log2(max(dx_duv.norm(), dy_duv.norm()));
+    level = max(level, 0.);
+    level = min(level, mipmap.size() - 1.0);
 
-
-    return 0;
+    if (sp.lsm == L_NEAREST) {
+        return round(level);
+    } else if (sp.lsm == L_LINEAR) {
+        return level;
+    } else {
+        return 0;
+    }
 }
 
 Color MipLevel::get_texel(int tx, int ty) {
+    tx = min((int)this->width - 1, tx);
+    ty = min((int)this->height - 1, ty);
     return Color(&texels[tx * 3 + ty * width * 3]);
 }
 
