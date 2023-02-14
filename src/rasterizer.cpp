@@ -167,10 +167,6 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
 
     bounding_max.x = min(double(effective_width), bounding_max.x);
     bounding_max.y = min(double(effective_height), bounding_max.y);
-    
-//    Vector2D colors[] = {
-//        c0, c1, c2
-//    };
 
     
 
@@ -184,6 +180,7 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
                 Vector2D line = vertices[(k + 1) % 3] - vertices[k];
                 Vector2D p_test_vector = p_test - vertices[k];
                 
+                
                 if (cross(line, p_test_vector) < 0)
                     count++;
             }
@@ -194,8 +191,10 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
                 Matrix3x3 matrix = Matrix3x3(x0, x1, x2,
                                            y0, y1, y2,
                                            1, 1, 1);
-                
-                fill_sample_pixel(x_test, y_test, c2);
+                Vector3D alpha_beta_gamma = matrix.inv() * Vector3D(x_test, y_test, 1);
+                Color c = (c0 * alpha_beta_gamma.x) + (c1 * alpha_beta_gamma.y) + (c2 * alpha_beta_gamma.z);
+        
+                fill_sample_pixel(x_test, y_test, c);
             } else {
                 if (in_bound)
                     break;
