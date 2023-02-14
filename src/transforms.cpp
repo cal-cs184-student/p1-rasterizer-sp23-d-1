@@ -13,13 +13,17 @@ Vector2D operator*(const Matrix3x3 &m, const Vector2D &v) {
 
 Matrix3x3 translate(float dx, float dy) {
 	// Part 3: Fill this in.
-    Matrix3x3 transform_m = Matrix3x3(0, 0, dx, 0, 0, dy, 0, 0, 1);
+    Matrix3x3 transform_m = Matrix3x3(1, 0, dx,
+                                      0, 1, dy,
+                                      0, 0, 1);
 	return transform_m;
 }
 
 Matrix3x3 scale(float sx, float sy) {
 	// Part 3: Fill this in.
-    Matrix3x3 transform_m = Matrix3x3(sx, sy, 0, sx, sy, 0, 0, 0, 1);
+    Matrix3x3 transform_m = Matrix3x3(sx, 0, 0,
+                                      0, sy, 0,
+                                      0, 0, 1);
 	return transform_m;
 }
 
