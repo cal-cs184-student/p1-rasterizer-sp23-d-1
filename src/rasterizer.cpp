@@ -188,9 +188,9 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
             if (!count || count == 3) {
                 in_bound = true;
                 
-                Matrix3x3 matrix = Matrix3x3(x0, x1, x2,
-                                           y0, y1, y2,
-                                           1, 1, 1);
+                Matrix3x3 matrix = Matrix3x3(x0 * step_size, x1 * step_size, x2 * step_size,
+                                             y0 * step_size, y1 * step_size, y2 * step_size,
+                                             1,  1,  1);
                 Vector3D alpha_beta_gamma = matrix.inv() * Vector3D(x_test, y_test, 1);
                 Color c = (c0 * alpha_beta_gamma.x) + (c1 * alpha_beta_gamma.y) + (c2 * alpha_beta_gamma.z);
         
@@ -201,9 +201,6 @@ void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Co
             }
         }
     }
-
-
-
 }
 
 
