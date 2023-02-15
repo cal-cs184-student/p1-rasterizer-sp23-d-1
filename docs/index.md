@@ -42,13 +42,31 @@ Supersampling is especially useful for creating a blurred effect for sharper cor
 
 **Show png screenshots of basic/test4.svg with the default viewing parameters and sample rates 1, 4, and 16 to compare them side-by-side. Position the pixel inspector over an area that showcases the effect dramatically; for example, a very skinny triangle corner. Explain why these results are observed.**
 
-![sr1](./images/sample_rate1.png)
-
-![sr4](./images/sample_rate4.png)
-
-![sr9](./images/sample_rate9.png)
-
-![sr16](./images/sample_rate16.png)
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/sample_rate1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate 1</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate 3</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/sample_rate9.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate 9</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
 
 With a sample rate of 1, this does not affect the sampled points or bounding box so the pixels are either fully filled or left empty, which results in the jagged lines and stray pixels in the triangle corners. However, as the sample rate increases to 4, 9, and 16, we see that the pixels are gradually filled with more intermediate values for the colors resulting in the smoother, blurred lines effect. 
 
