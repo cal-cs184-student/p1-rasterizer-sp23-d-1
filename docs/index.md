@@ -1,4 +1,4 @@
-<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2018</h1>
+<h1 align="middle">CS 184: Computer Graphics and Imaging</h1>
 <h2 align="middle">Project 1: Rasterizer</h1>
 <h3 align="middle">Michael Lin, Rachel Lee</h2>
 
