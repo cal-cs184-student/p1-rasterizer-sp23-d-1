@@ -40,6 +40,8 @@
 
 ### Task 4: Barycentric coordinates
 - **Explain barycentric coordinates in your own words and use an image to aid you in your explanation. One idea is to use a svg file that plots a single triangle with one red, one green, and one blue vertex, which should produce a smoothly blended color triangle.** 
-    - sdfd
+    ![bary_coords](./images/bary_coords.png)
+    - Barycentric coordinates are useful in linear interpolation of triangles and getting smoother varying values within the triangle, and these values can include anything from texture, color, and vector values. Given the three triangle vertices V~A~, V~B~, and V~C~ and a sample coordinate within the triangle, the $\alpha$, $\beta$, and $\gamma$ weights can be calculated. Using these weight values, we multiply each weight with the respective value that we wish to find (in this case the color of the pixel C = $\alpha$ C~A~ + $\beta$ C~B~ + $\gamma$ C~C~).
+    
 - **Show a png screenshot of svg/basic/test7.svg with default viewing parameters and sample rate 1. If you make any additional images with color gradients, include them.** 
     ![task4](./images/task4.png)
